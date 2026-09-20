@@ -1,0 +1,1510 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة فصولي - منصة تعليمية متكاملة ومتاحة للجميع</title>
+
+  <!-- الخطوط والأيقونات -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- مكتبات MediaPipe الخاصة بالتعرف على اليد والرسم -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --bg-color: #f7f4ea;
+      --card-bg: #ffffff;
+      --primary-pink: #e62363;
+      --primary-pink-hover: #cf1c55;
+      --primary-green: #25d366; /* لون واتساب للتواصل */
+      --primary-blue: #0284c7;
+      --text-dark: #2d2d2d;
+      --text-muted: #666666;
+      --border-color: #e5e0d3;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --focus-outline: 3px solid #0056b3;
+    }
+
+    body.high-contrast {
+      --bg-color: #000000;
+      --card-bg: #1a1a1a;
+      --text-dark: #ffffff;
+      --text-muted: #cccccc;
+      --border-color: #ffffff;
+      --primary-pink: #ff0055;
+      --primary-green: #00ff00;
+      --primary-blue: #00ffff;
+    }
+
+    body.calm-mode {
+      --bg-color: #eef2f5;
+      --card-bg: #f8fafc;
+      --text-dark: #334155;
+      --primary-pink: #475569;
+      --primary-green: #64748b;
+      --primary-blue: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', 'Tajawal', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    a:focus, button:focus, input:focus, select:focus, [tabindex="0"]:focus {
+      outline: var(--focus-outline) !important;
+      outline-offset: 3px;
+    }
+
+    /* Accessibility Bar */
+    .accessibility-bar {
+      background: #2b2d42;
+      color: #fff;
+      padding: 8px 5%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .acc-btn {
+      background: #3d405b;
+      border: 1px solid #8d99ae;
+      color: #fff;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .voice-active {
+      background: var(--primary-pink) !important;
+      border-color: #fff !important;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+
+    /* Header */
+    header {
+      background-color: #ffffff;
+      padding: 12px 6%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .brand-logo {
+      font-weight: 800;
+      font-size: 26px;
+      color: var(--primary-pink);
+      cursor: pointer;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 15px;
+      padding-bottom: 4px;
+      cursor: pointer;
+    }
+
+    .nav-links a.active {
+      color: var(--primary-pink);
+      border-bottom: 3px solid var(--primary-pink);
+    }
+
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f0f0f0;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Layout */
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 20px;
+    }
+
+    .step-screen {
+      display: none;
+      width: 100%;
+      max-width: 950px;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .step-screen.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* UI Components */
+    .btn {
+      padding: 12px 28px;
+      border-radius: var(--radius-md);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+
+    .btn-pink { background-color: var(--primary-pink); color: #fff; }
+    .btn-pink:hover { background-color: var(--primary-pink-hover); }
+    .btn-green { background-color: #73b828; color: #fff; }
+    .btn-outline { background-color: transparent; border: 1.5px solid var(--text-dark); color: var(--text-dark); }
+    .btn-outline:hover { background-color: rgba(0,0,0,0.05); }
+
+    .auth-box {
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      padding: 35px 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+      text-align: center;
+      border: 1px solid var(--border-color);
+    }
+
+    .social-btn {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .form-group { margin-bottom: 16px; text-align: right; }
+    .form-control, select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 15px;
+      background: var(--card-bg);
+      color: var(--text-dark);
+    }
+
+    .form-row { display: flex; gap: 10px; }
+
+    .otp-container {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      direction: ltr;
+      margin: 25px 0;
+    }
+
+    .otp-input {
+      width: 50px;
+      height: 55px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: #fdfdfd;
+    }
+
+    /* Courses & Grid */
+    .courses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 25px;
+    }
+
+    .course-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .course-card:hover { transform: translateY(-3px); }
+
+    .course-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* Teachers View */
+    .subject-header { text-align: center; margin-bottom: 25px; }
+    .days-filter {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      background: #ffffff;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 25px;
+      border: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .day-chip {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: #f0f0f0;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .day-chip.active {
+      background: var(--primary-pink);
+      color: white;
+    }
+
+    .teachers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 20px;
+    }
+
+    .teacher-card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .discount-banner {
+      background: #0073e6;
+      color: white;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .teacher-body {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .price-tag { font-size: 20px; font-weight: 800; }
+    .price-tag span { font-size: 13px; text-decoration: line-through; color: var(--text-muted); }
+
+    .schedule-info {
+      background: #fafafa;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-color);
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Accessibility Tools */
+    .accessibility-tools {
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-top: 30px;
+    }
+
+    .progress-bar-bg {
+      background: #e2e8f0;
+      height: 12px;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progress-fill {
+      background: #22c55e;
+      height: 100%;
+      width: 25%;
+      transition: width 0.4s ease;
+    }
+
+    .camera-container {
+      display: none;
+      margin: 20px auto 0;
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      background: #000;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 3px solid var(--primary-pink);
+    }
+
+    .camera-container canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .sign-overlay {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    /* =========================================
+       تصميم قسم "رسائلي" (شات الواتساب مع المعلمين)
+    ========================================= */
+    .whatsapp-container {
+      display: flex;
+      height: 600px;
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+
+    /* القائمة الجانبية للمعلمين */
+    .chat-sidebar {
+      width: 320px;
+      border-left: 1px solid var(--border-color);
+      background: #fcfcfc;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-sidebar-header {
+      padding: 18px;
+      background: #f0f2f5;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 800;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .teacher-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .teacher-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .teacher-item:hover, .teacher-item.active {
+      background: #eef5e9;
+    }
+
+    .teacher-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--primary-pink);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      position: relative;
+    }
+
+    .online-indicator {
+      width: 12px;
+      height: 12px;
+      background: #25d366;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+
+    .teacher-info-item {
+      flex: 1;
+    }
+
+    .teacher-info-item h4 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .teacher-info-item p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* منطقة الدردشة الرئيسية */
+    .chat-main-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #efeae2; /* خلفية شبيهة بالواتساب */
+      position: relative;
+    }
+
+    .chat-main-header {
+      padding: 12px 20px;
+      background: #f0f2f5;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .teacher-details {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .phone-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #25d366;
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .phone-badge:hover {
+      background: #1eb857;
+    }
+
+    .whatsapp-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msg-bubble {
+      max-width: 65%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .msg-bubble.incoming {
+      background: #ffffff;
+      align-self: flex-start;
+      border-top-right-radius: 0;
+    }
+
+    .msg-bubble.outgoing {
+      background: #d9fdd3;
+      align-self: flex-end;
+      border-top-left-radius: 0;
+    }
+
+    .msg-time {
+      font-size: 10px;
+      color: #888;
+      float: left;
+      margin-top: 4px;
+      margin-right: 8px;
+    }
+
+    .whatsapp-input-bar {
+      padding: 12px 15px;
+      background: #f0f2f5;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .whatsapp-input-bar input {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      border-radius: 25px;
+      outline: none;
+      font-size: 14px;
+      background: #ffffff;
+    }
+
+    .send-whatsapp-btn {
+      background: #25d366;
+      color: white;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    /* =========================================
+       تصميم الشات بوت الجانبي
+    ========================================= */
+    .chatbot-toggler {
+      position: fixed;
+      bottom: 25px;
+      left: 25px;
+      width: 60px;
+      height: 60px;
+      background: var(--primary-pink);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(230, 35, 99, 0.4);
+      z-index: 1000;
+      transition: transform 0.2s;
+    }
+
+    .chatbot-toggler:hover { transform: scale(1.08); }
+
+    .chatbot-card {
+      position: fixed;
+      bottom: 95px;
+      left: 25px;
+      width: 360px;
+      max-width: 90vw;
+      height: 480px;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      border: 1px solid var(--border-color);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 1000;
+    }
+
+    .chatbot-card.active { display: flex; }
+
+    .chat-header {
+      background: var(--primary-pink);
+      color: white;
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chat-header h4 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .chat-close-btn { background: transparent; border: none; color: white; font-size: 18px; cursor: pointer; }
+
+    .chat-body {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #fdfdfd;
+    }
+
+    .chat-msg {
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .chat-msg.bot { background: #f0f0f0; color: var(--text-dark); align-self: flex-start; }
+    .chat-msg.user { background: var(--primary-pink); color: white; align-self: flex-end; }
+
+    .chat-footer {
+      padding: 10px;
+      background: #fff;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-footer input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .chat-footer button {
+      background: var(--primary-pink);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- شريط التحكم الصوتي وإمكانية الوصول -->
+  <div class="accessibility-bar" aria-label="أدوات الوصول والتحكم الصوتي">
+    <div>
+      <button id="voiceBtn" class="acc-btn" onclick="toggleVoiceControl()">
+        <i class="fa-solid fa-microphone"></i> المساعد الصوتي: <span id="voiceStatus">معطل</span>
+      </button>
+      <button class="acc-btn" onclick="speakCurrentPage()">
+        <i class="fa-solid fa-volume-high"></i> اقرأ الصفحة
+      </button>
+    </div>
+    <div>
+      <button class="acc-btn" onclick="toggleContrast()">التباين العالي</button>
+      <button class="acc-btn" onclick="toggleCalmMode()">الوضع الهادئ (Autism/ADHD)</button>
+      <button class="acc-btn" onclick="changeFontSize(1)">+ خط</button>
+      <button class="acc-btn" onclick="changeFontSize(-1)">- خط</button>
+    </div>
+  </div>
+
+  <!-- الهيدر الرئيسي -->
+  <header role="banner">
+    <div class="brand-logo" onclick="goToStep(7)">فصولي</div>
+    <nav role="navigation">
+      <ul class="nav-links">
+        <li><a id="nav-classes" href="#" class="active" onclick="switchNavTab('classes')">فصولي</a></li>
+        <li><a id="nav-messages" href="#" onclick="switchNavTab('messages')">رسائلي</a></li>
+        <li><a id="nav-reports" href="#" onclick="alert('قسم التقارير قيد التطوير حالياً.');">تقاريري</a></li>
+        <li><a id="nav-wallet" href="#" onclick="alert('قسم المحفظة قيد التطوير حالياً.');">محفظتي</a></li>
+      </ul>
+    </nav>
+    <div class="user-badge" id="headerUser" tabindex="0">
+      <i class="fa-regular fa-user"></i>
+      <span>زائر</span>
+    </div>
+  </header>
+
+  <main role="main">
+    <div id="sr-announcer" class="sr-only" aria-live="polite"></div>
+
+    <!-- Step 1: Landing Screen -->
+    <section id="step-1" class="step-screen active">
+      <div style="background: #f3efe3; padding:40px; border-radius:24px; display:flex; gap:30px; align-items:center; flex-wrap:wrap;">
+        <div style="flex:1; min-width:280px;">
+          <h1 style="font-size: 40px; font-weight:800;">فصولي</h1>
+          <p style="margin: 15px 0 25px; color: var(--text-muted);">قم بتسجيل الدخول أو إنشاء حساب لعرض فصولك والتواصل مع المعلمين.</p>
+          <div style="display:flex; gap:15px;">
+            <button class="btn btn-pink" onclick="goToStep(2)">تسجيل الاشتراك</button>
+            <button class="btn btn-outline" onclick="goToStep(2)">تسجيل الدخول</button>
+          </div>
+        </div>
+        <div style="flex:1; min-width:280px; background: linear-gradient(135deg, #e62363, #8a0e35); height:220px; border-radius:20px; display:flex; justify-content:center; align-items:center; color:white;">
+          <button class="btn" style="background:white; border-radius:50%; width:60px; height:60px; color:var(--primary-pink);" onclick="alert('عرض الفيديو الترويجي لمنصة فصولي...')">
+            <i class="fa-solid fa-play" style="font-size:20px;"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 2: Auth Methods -->
+    <section id="step-2" class="step-screen">
+      <div class="auth-box">
+        <h2 style="margin-bottom:20px;">مرحباً بك في «فصولي»!</h2>
+        <button class="social-btn" onclick="goToStep(3)">
+          <i class="fa-brands fa-google" style="color: #ea4335;"></i> المتابعة باستخدام حساب «جوجل»
+        </button>
+        <button class="social-btn" onclick="goToStep(3)">
+          <i class="fa-brands fa-facebook" style="color: #1877f2;"></i> المتابعة باستخدام حساب «فيسبوك»
+        </button>
+        <button class="social-btn" onclick="goToStep(3)">
+          <i class="fa-brands fa-apple"></i> المتابعة باستخدام حساب «أبل»
+        </button>
+        <button class="social-btn" onclick="goToStep(3)">
+          <i class="fa-regular fa-envelope"></i> الاستمرار باستخدام البريد الإلكتروني
+        </button>
+      </div>
+    </section>
+
+    <!-- Step 3: Account Type -->
+    <section id="step-3" class="step-screen">
+      <div class="auth-box">
+        <h2>نوع الحساب</h2>
+        <div class="form-group" style="margin-top:20px;">
+          <select id="roleSelect">
+            <option value="student">طالب</option>
+            <option value="teacher">معلم</option>
+            <option value="parent">ولي أمر</option>
+          </select>
+        </div>
+        <button class="btn btn-pink" style="width:100%;" onclick="goToStep(4)">متابعة</button>
+      </div>
+    </section>
+
+    <!-- Step 4: Student Details -->
+    <section id="step-4" class="step-screen">
+      <div class="auth-box">
+        <h2>معلومات الطالب</h2>
+        <div class="form-row" style="margin-top:15px;">
+          <div class="form-group" style="flex:1;">
+            <input type="text" id="firstName" class="form-control" placeholder="Hager" value="Hager">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <input type="text" id="lastName" class="form-control" placeholder="Tahoun" value="Tahoun">
+          </div>
+        </div>
+        <div class="form-group">
+          <select><option>مصر 🇪🇬</option></select>
+        </div>
+        <div class="form-group">
+          <select id="gradeSelect">
+            <option>الصف الثالث الابتدائي</option>
+            <option>الصف الرابع الابتدائي</option>
+            <option>الصف الخامس الابتدائي</option>
+          </select>
+        </div>
+        <button class="btn btn-pink" style="width:100%;" onclick="goToStep(5)">متابعة</button>
+      </div>
+    </section>
+
+    <!-- Step 5: Phone Number -->
+    <section id="step-5" class="step-screen">
+      <div class="auth-box">
+        <h2>رقم الهاتف</h2>
+        <div class="form-group" style="margin-top:15px;">
+          <input type="tel" class="form-control" dir="ltr" style="text-align: center;" value="+20 100 000 0000">
+        </div>
+        <button class="btn btn-pink" style="width:100%;" onclick="goToStep(6)">متابعة</button>
+      </div>
+    </section>
+
+    <!-- Step 6: OTP Verification -->
+    <section id="step-6" class="step-screen">
+      <div class="auth-box">
+        <h2>رمز التحقق</h2>
+        <p style="margin:10px 0; color:var(--text-muted);">أدخل رمز التحقق المرسل إلى هاتفك</p>
+        <div class="otp-container">
+          <input type="text" maxlength="1" class="otp-input" value="9">
+          <input type="text" maxlength="1" class="otp-input" value="5">
+          <input type="text" maxlength="1" class="otp-input" value="5">
+          <input type="text" maxlength="1" class="otp-input" value="9">
+          <input type="text" maxlength="1" class="otp-input" value="4">
+          <input type="text" maxlength="1" class="otp-input" value="4">
+        </div>
+        <button class="btn btn-pink" style="width:100%;" onclick="finishRegistration()">تأكيد ورؤية الفصول</button>
+      </div>
+    </section>
+
+    <!-- Step 7: Subject Selection -->
+    <section id="step-7" class="step-screen">
+      <div style="text-align: center; margin-bottom: 25px;">
+        <span id="displayGrade" style="background: #ffffff; padding: 10px 24px; border-radius: 25px; font-weight: 700; border: 1px solid var(--border-color);">
+          <i class="fa-solid fa-graduation-cap" style="color: var(--primary-pink);"></i> الصف الثالث الابتدائي
+        </span>
+      </div>
+
+      <h2 style="font-size: 24px; font-weight: 800; text-align: right; margin-bottom: 20px;">الاطلاع على جميع الفصول</h2>
+
+      <div class="courses-grid">
+        <div class="course-card" onclick="selectSubject('اللغة العربية', 'ض', '#00a896')">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700;">اللغة العربية</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">الفصل الدراسي الأول • المنهج الدراسي</p>
+          </div>
+          <div class="course-badge" style="background-color: #00a896;">ض</div>
+        </div>
+
+        <div class="course-card" onclick="selectSubject('English', 'E', '#8d5b4c')">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700;">English</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">الفصل الدراسي الأول • المنهج الدراسي</p>
+          </div>
+          <div class="course-badge" style="background-color: #8d5b4c;"><i class="fa-solid fa-clock-tower"></i></div>
+        </div>
+
+        <div class="course-card" onclick="selectSubject('Connect Plus', 'C', '#8d5b4c')">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700;">Connect Plus</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">الفصل الدراسي الأول • المنهج الدراسي</p>
+          </div>
+          <div class="course-badge" style="background-color: #8d5b4c;"><i class="fa-solid fa-globe"></i></div>
+        </div>
+
+        <div class="course-card" onclick="selectSubject('الرياضيات', 'م', '#0077b6')">
+          <div>
+            <h3 style="font-size: 18px; font-weight: 700;">الرياضيات</h3>
+            <p style="font-size: 13px; color: var(--text-muted);">الفصل الدراسي الأول • المنهج الدراسي</p>
+          </div>
+          <div class="course-badge" style="background-color: #0077b6;"><i class="fa-solid fa-calculator"></i></div>
+        </div>
+      </div>
+
+      <!-- أدوات الوصول التفاعلية -->
+      <div class="accessibility-tools">
+        <h3>مساعد التعلم للقدرات الخاصة واللغة 🤟</h3>
+        <p id="lesson-status-text" style="margin-top:5px; color:var(--text-muted);">أنجزت 25% من دروس هذا الأسبوع! واصل التميز ⭐</p>
+        <div class="progress-bar-bg">
+          <div id="lesson-progress-bar" class="progress-fill"></div>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+          <button class="btn btn-outline" onclick="readLessonQuestion()"><i class="fa-solid fa-volume-high"></i> قراءة السؤال التعليمي</button>
+          <button class="btn btn-outline" onclick="startCameraSafe()"><i class="fa-solid fa-camera"></i> تفعيل كاميرا إشارات اليد ✋</button>
+          <button class="btn btn-outline" onclick="simulateGesture('أحسنت! إجابة صحيحة 👍')"><i class="fa-solid fa-hand"></i> محاكاة إشارة: ممتاز</button>
+        </div>
+
+        <div id="cameraBox" class="camera-container">
+          <video id="webcamVideo" playsinline style="display: none;"></video>
+          <canvas id="outputCanvas" width="640" height="480"></canvas>
+          <div id="signOverlay" class="sign-overlay">جاري التعرف على إيماءات اليد...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step 8: Teachers View -->
+    <section id="step-8" class="step-screen">
+      <div class="subject-header">
+        <div id="selectedSubjectBadge" class="course-badge" style="background: #00a896; margin: 0 auto 10px; width:60px; height:60px; font-size:26px;">ض</div>
+        <h2 id="selectedSubjectTitle" style="font-size: 26px; font-weight:800;">اللغة العربية</h2>
+        <p style="color:var(--text-muted);">الصف الثالث الابتدائي • الفصل الدراسي الأول • المنهج الدراسي</p>
+      </div>
+
+      <div class="days-filter">
+        <button class="day-chip active">إلغاء الكل</button>
+        <button class="day-chip">السبت</button>
+        <button class="day-chip">الأحد</button>
+        <button class="day-chip">الاثنين</button>
+        <button class="day-chip">الثلاثاء</button>
+        <button class="day-chip">الأربعاء</button>
+        <button class="day-chip">الخميس</button>
+        <button class="day-chip">الجمعة</button>
+      </div>
+
+      <div class="teachers-grid">
+        <article class="teacher-card">
+          <div class="discount-banner">
+            <span><i class="fa-solid fa-tag"></i> خصم 30%</span>
+            <span>خصم بداية الدراسة!</span>
+          </div>
+          <div class="teacher-body">
+            <div>
+              <h3 style="font-size: 20px; font-weight: 800;">بسمة مخلوف</h3>
+              <div style="margin-top:8px;">
+                <span style="background:#fff8e7; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:700; color:#d97706;"><i class="fa-solid fa-briefcase"></i> 6 سنوات خبرة</span>
+                <span style="background:#eef2ff; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:700; color:#3730a3;"><i class="fa-solid fa-circle-check"></i> مُعلم معتمد</span>
+              </div>
+            </div>
+            <div>
+              <div class="price-tag">224 ج.م. <span>320 ج.م</span></div>
+              <small style="color:var(--text-muted);">شهرياً</small>
+            </div>
+          </div>
+          <div class="schedule-info">
+            <div>الجدول: الأحد والثلاثاء الساعة 4:30م <br><small style="color:var(--text-muted);">المقاعد المتبقية: 14 من إجمالي 25</small></div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline" style="padding:6px 12px; font-size:13px;" onclick="openTeacherChat(0)">تواصل مع المعلم</button>
+              <button class="btn btn-green" style="padding:6px 14px; font-size:13px;" onclick="speakText('تم تسجيلك مجاناً مع المعلمة بسمة مخلوف'); increaseStudentProgress(20);">سجل مجاناً</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="teacher-card">
+          <div class="discount-banner">
+            <span><i class="fa-solid fa-tag"></i> خصم 30%</span>
+            <span>خصم بداية الدراسة!</span>
+          </div>
+          <div class="teacher-body">
+            <div>
+              <h3 style="font-size: 20px; font-weight: 800;">بسيمة زكي</h3>
+              <div style="margin-top:8px;">
+                <span style="background:#fff8e7; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:700; color:#d97706;"><i class="fa-solid fa-briefcase"></i> 37 سنة خبرة</span>
+                <span style="background:#eef2ff; padding:4px 8px; border-radius:10px; font-size:12px; font-weight:700; color:#3730a3;"><i class="fa-solid fa-circle-check"></i> مُعلم معتمد</span>
+              </div>
+            </div>
+            <div>
+              <div class="price-tag">224 ج.م. <span>320 ج.م</span></div>
+              <small style="color:var(--text-muted);">شهرياً</small>
+            </div>
+          </div>
+          <div class="schedule-info">
+            <div>الجدول: الأحد والأربعاء الساعة 6:00م <br><small style="color:var(--text-muted);">المقاعد المتبقية: 14 من إجمالي 25</small></div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline" style="padding:6px 12px; font-size:13px;" onclick="openTeacherChat(1)">تواصل مع المعلم</button>
+              <button class="btn btn-green" style="padding:6px 14px; font-size:13px;" onclick="speakText('تم تسجيلك مجاناً مع المعلمة بسيمة زكي'); increaseStudentProgress(20);">سجل مجاناً</button>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div style="text-align:center; margin-top:20px;">
+        <button class="btn btn-outline" onclick="goToStep(7)"><i class="fa-solid fa-arrow-right"></i> العودة للمواد الدراسية</button>
+      </div>
+    </section>
+
+    <!-- =========================================
+         Step 9: قسم "رسائلي" (شات التواصل مع المعلمين)
+    ========================================= -->
+    <section id="step-9" class="step-screen">
+      <h2 style="font-size: 24px; font-weight: 800; text-align: right; margin-bottom: 15px;">رسائلي - التواصل مع المعلمين</h2>
+      
+      <div class="whatsapp-container">
+        <!-- القائمة الجانبية للمعلمين -->
+        <div class="chat-sidebar">
+          <div class="chat-sidebar-header">
+            <i class="fa-regular fa-comments" style="color:var(--primary-pink);"></i> المعلمون المتاحون
+          </div>
+          <div class="teacher-list" id="teacherList">
+            <!-- سيتم توليد المعلمين ديناميكياً بواسطة JavaScript -->
+          </div>
+        </div>
+
+        <!-- شاشة المحادثة الرئيسية -->
+        <div class="chat-main-area">
+          <div class="chat-main-header">
+            <div class="teacher-details">
+              <div class="teacher-avatar" id="chatTeacherAvatar">ب</div>
+              <div>
+                <h3 id="chatTeacherName" style="font-size:16px; font-weight:800;">بسمة مخلوف</h3>
+                <small id="chatTeacherSubject" style="color:var(--text-muted);">معلمة اللغة العربية</small>
+              </div>
+            </div>
+
+            <!-- رقم التواصل المباشر ورابط الواتساب -->
+            <a id="chatTeacherPhone" href="https://wa.me/201012345678" target="_blank" class="phone-badge">
+              <i class="fa-brands fa-whatsapp"></i> <span id="chatPhoneNum">+20 101 234 5678</span>
+            </a>
+          </div>
+
+          <!-- منطقة الرسائل -->
+          <div class="whatsapp-messages" id="whatsappMessages">
+            <!-- رسائل واتساب الافتراضية -->
+          </div>
+
+          <!-- شريط كتابة الرسالة -->
+          <div class="whatsapp-input-bar">
+            <input type="text" id="whatsappInput" placeholder="اكتب رسالتك للمعلم..." onkeypress="handleWhatsappKeyPress(event)">
+            <button class="send-whatsapp-btn" onclick="sendWhatsappMessage()">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- الشات بوت الجانبي -->
+  <button class="chatbot-toggler" onclick="toggleChatbot()" aria-label="فتح المحادثة الفورية">
+    <i class="fa-solid fa-comments"></i>
+  </button>
+
+  <div class="chatbot-card" id="chatbotCard">
+    <div class="chat-header">
+      <h4><i class="fa-solid fa-robot"></i> مساعد «فصولي» الذكي</h4>
+      <button class="chat-close-btn" onclick="toggleChatbot()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="chat-body" id="chatBody">
+      <div class="chat-msg bot">مرحباً بك! أنا مساعد منصة فصولي، كيف يمكنني مساعدتك اليوم؟ 😊</div>
+    </div>
+    <div class="chat-footer">
+      <input type="text" id="chatInput" placeholder="اكتب سؤالك هنا..." onkeypress="handleChatKeyPress(event)">
+      <button onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <script>
+    let currentStep = 1;
+
+    // قاعدة بيانات المعلمين مع الرسائل وأرقام الهواتف
+    const teachersData = [
+      {
+        id: 0,
+        name: "بسمة مخلوف",
+        subject: "معلمة اللغة العربية",
+        phone: "+20 101 234 5678",
+        rawPhone: "201012345678",
+        avatar: "ب",
+        messages: [
+          { sender: 'teacher', text: 'أهلاً بك يا طالبي العزيز! هل لديك أي استفسار بخصوص درس اللغة العربية اليوم؟', time: '10:30 ص' },
+          { sender: 'student', text: 'السلام عليكم يا أستاذة، متى موعد الاختبار القادم؟', time: '10:32 ص' },
+          { sender: 'teacher', text: 'وعليكم السلام! الاختبار القادم يوم الأحد القادم في تمام الساعة 4:30 مساءً.', time: '10:35 ص' }
+        ]
+      },
+      {
+        id: 1,
+        name: "بسيمة زكي",
+        subject: "معلمة اللغة العربية واللغات",
+        phone: "+20 109 876 5432",
+        rawPhone: "201098765432",
+        avatar: "ب",
+        messages: [
+          { sender: 'teacher', text: 'مرحباً Hager! جاهزة لحصة اليوم؟', time: '11:00 ص' },
+          { sender: 'student', text: 'أهلاً أستاذة بسيمة، نعم جاهزة وبدأت في حل الواجب!', time: '11:05 ص' }
+        ]
+      },
+      {
+        id: 2,
+        name: "مستر أحمد السيد",
+        subject: "معلم مادة English",
+        phone: "+20 112 334 4556",
+        rawPhone: "201123344556",
+        avatar: "أ",
+        messages: [
+          { sender: 'teacher', text: 'Hello Hager! Don\'t forget your English homework today.', time: '09:15 ص' }
+        ]
+      }
+    ];
+
+    let activeTeacherIndex = 0;
+
+    // التنقل بين الشاشات
+    function goToStep(stepNum) {
+      currentStep = stepNum;
+      document.querySelectorAll('.step-screen').forEach(s => s.classList.remove('active'));
+      const activeScreen = document.getElementById(`step-${stepNum}`);
+      if (activeScreen) {
+        activeScreen.classList.add('active');
+      }
+
+      // ضبط حالة شريط الملاحة
+      const navClasses = document.getElementById('nav-classes');
+      const navMessages = document.getElementById('nav-messages');
+      
+      if (stepNum === 9) {
+        navClasses?.classList.remove('active');
+        navMessages?.classList.add('active');
+      } else {
+        navClasses?.classList.add('active');
+        navMessages?.classList.remove('active');
+      }
+
+      const announcer = document.getElementById('sr-announcer');
+      if (announcer) announcer.innerText = `تم الانتقال إلى الشاشة رقم ${stepNum}`;
+    }
+
+    // التنقل باستخدام أزرار الهيدر
+    function switchNavTab(tab) {
+      if (tab === 'classes') {
+        goToStep(7);
+      } else if (tab === 'messages') {
+        renderTeacherList();
+        loadTeacherChat(activeTeacherIndex);
+        goToStep(9);
+      }
+    }
+
+    // فتح شات معلم معين من صفحة المعلمين
+    function openTeacherChat(teacherIndex) {
+      activeTeacherIndex = teacherIndex;
+      switchNavTab('messages');
+    }
+
+    // عرض قائمة المعلمين في جانب شاشة الرسائل
+    function renderTeacherList() {
+      const teacherListContainer = document.getElementById('teacherList');
+      if (!teacherListContainer) return;
+
+      teacherListContainer.innerHTML = '';
+      teachersData.forEach((teacher, idx) => {
+        const item = document.createElement('div');
+        item.className = `teacher-item ${idx === activeTeacherIndex ? 'active' : ''}`;
+        item.onclick = () => loadTeacherChat(idx);
+
+        const lastMsg = teacher.messages[teacher.messages.length - 1]?.text || 'لا توجد رسائل بعد';
+
+        item.innerHTML = `
+          <div class="teacher-avatar">
+            ${teacher.avatar}
+            <div class="online-indicator"></div>
+          </div>
+          <div class="teacher-info-item">
+            <h4>${teacher.name}</h4>
+            <p>${lastMsg.substring(0, 25)}...</p>
+          </div>
+        `;
+        teacherListContainer.appendChild(item);
+      });
+    }
+
+    // تحميل محادثة معلم محدد
+    function loadTeacherChat(index) {
+      activeTeacherIndex = index;
+      const teacher = teachersData[index];
+
+      document.getElementById('chatTeacherName').innerText = teacher.name;
+      document.getElementById('chatTeacherSubject').innerText = teacher.subject;
+      document.getElementById('chatTeacherAvatar').innerText = teacher.avatar;
+      document.getElementById('chatPhoneNum').innerText = teacher.phone;
+      document.getElementById('chatTeacherPhone').href = `https://wa.me/${teacher.rawPhone}`;
+
+      renderTeacherList();
+      renderWhatsappMessages();
+    }
+
+    // عرض الرسائل في المحادثة الحالية
+    function renderWhatsappMessages() {
+      const msgsContainer = document.getElementById('whatsappMessages');
+      if (!msgsContainer) return;
+
+      msgsContainer.innerHTML = '';
+      const currentMessages = teachersData[activeTeacherIndex].messages;
+
+      currentMessages.forEach(msg => {
+        const bubble = document.createElement('div');
+        bubble.className = `msg-bubble ${msg.sender === 'student' ? 'outgoing' : 'incoming'}`;
+        bubble.innerHTML = `
+          <div>${msg.text}</div>
+          <span class="msg-time">${msg.time}</span>
+        `;
+        msgsContainer.appendChild(bubble);
+      });
+
+      msgsContainer.scrollTop = msgsContainer.scrollHeight;
+    }
+
+    // إرسال رسالة في الشات
+    function sendWhatsappMessage() {
+      const input = document.getElementById('whatsappInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+      // إضافة رسالة الطالب
+      teachersData[activeTeacherIndex].messages.push({
+        sender: 'student',
+        text: text,
+        time: timeStr
+      });
+
+      input.value = '';
+      renderWhatsappMessages();
+
+      // رد تلقائي محاكي من المعلم
+      setTimeout(() => {
+        teachersData[activeTeacherIndex].messages.push({
+          sender: 'teacher',
+          text: 'شكراً لرسالتك! تسلمت استفسارك وسأجيبك بالتفصيل قريباً 👍',
+          time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+        });
+        renderWhatsappMessages();
+      }, 1200);
+    }
+
+    function handleWhatsappKeyPress(e) {
+      if (e.key === 'Enter') sendWhatsappMessage();
+    }
+
+    // إتمام التسجيل
+    function finishRegistration() {
+      const firstName = document.getElementById('firstName')?.value || 'Hager';
+      const grade = document.getElementById('gradeSelect')?.value || 'الصف الثالث الابتدائي';
+      
+      const headerUser = document.getElementById('headerUser');
+      if (headerUser) {
+        headerUser.innerHTML = `<i class="fa-regular fa-user"></i> <span>${firstName}</span>`;
+      }
+
+      const displayGrade = document.getElementById('displayGrade');
+      if (displayGrade) {
+        displayGrade.innerHTML = `<i class="fa-solid fa-graduation-cap" style="color: var(--primary-pink);"></i> ${grade}`;
+      }
+      
+      goToStep(7);
+    }
+
+    // اختيار المادة والدخول لصفحة المعلمين
+    function selectSubject(name, badge, color) {
+      const titleEl = document.getElementById('selectedSubjectTitle');
+      const badgeEl = document.getElementById('selectedSubjectBadge');
+
+      if (titleEl) titleEl.innerText = name;
+      if (badgeEl) {
+        badgeEl.innerText = badge;
+        badgeEl.style.backgroundColor = color;
+      }
+
+      speakText(`تم اختيار مادة ${name}. جاري عرض المعلمين المتاحين`);
+      goToStep(8);
+    }
+
+    // القارئ الصوتي النصي
+    function speakText(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ar-SA';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function speakCurrentPage() {
+      const activeScreen = document.querySelector('.step-screen.active');
+      if (activeScreen) {
+        const text = activeScreen.innerText.replace(/\n+/g, ' ');
+        speakText(text);
+      }
+    }
+
+    // التحكم بالصوت (Speech Recognition)
+    let recognition;
+    let isListening = false;
+
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.lang = 'ar-SA';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+
+      recognition.onresult = function(event) {
+        const command = event.results[event.results.length - 1][0].transcript.trim();
+
+        if (command.includes("رسائل") || command.includes("رسائلي")) {
+          switchNavTab('messages');
+        } else if (command.includes("فصول") || command.includes("فصولي")) {
+          switchNavTab('classes');
+        } else if (command.includes("العربية") || command.includes("عربي")) {
+          selectSubject('اللغة العربية', 'ض', '#00a896');
+        } else if (command.includes("رياضيات")) {
+          selectSubject('الرياضيات', 'م', '#0077b6');
+        }
+      };
+    }
+
+    function toggleVoiceControl() {
+      const btn = document.getElementById('voiceBtn');
+      const status = document.getElementById('voiceStatus');
+
+      if (!recognition) {
+        alert("⚠️ المتصفح لديك لا يدعم التعرف الصوتي المباشر. يرجى تجربة متصفح Google Chrome.");
+        return;
+      }
+
+      if (!isListening) {
+        try {
+          recognition.start();
+          isListening = true;
+          if (btn) btn.classList.add('voice-active');
+          if (status) status.innerText = "يعمل الآن (تحدث بأمرك)";
+          speakText("المساعد الصوتي يعمل الآن. يمكنك قول رسائلي أو فصولي للتنقل");
+        } catch(e) {
+          alert("⚠️ متعذر بدء التسجيل الصوتي.");
+        }
+      } else {
+        recognition.stop();
+        isListening = false;
+        if (btn) btn.classList.remove('voice-active');
+        if (status) status.innerText = "معطل";
+      }
+    }
+
+    // إمكانية الوصول وتغيير المظهر
+    function toggleContrast() { document.body.classList.toggle('high-contrast'); }
+    function toggleCalmMode() { document.body.classList.toggle('calm-mode'); }
+
+    let zoomLevel = 100;
+    function changeFontSize(delta) {
+      zoomLevel += delta * 10;
+      document.body.style.zoom = zoomLevel + "%";
+    }
+
+    function readLessonQuestion() {
+      const questionText = "ما هو الحرف الأول من كلمة أسد؟";
+      speakText(questionText);
+    }
+
+    function simulateGesture(msg) {
+      const overlay = document.getElementById("signOverlay");
+      if (overlay) overlay.innerText = msg;
+      speakText(msg);
+    }
+
+    function increaseStudentProgress(amount) {
+      const bar = document.getElementById("lesson-progress-bar");
+      if (bar) {
+        let current = parseInt(bar.style.width) || 25;
+        current = Math.min(100, current + amount);
+        bar.style.width = current + "%";
+        document.getElementById("lesson-status-text").innerText = `أنجزت ${current}% من دروس هذا الأسبوع! واصل التميز ⭐`;
+      }
+    }
+
+    async function startCameraSafe() {
+      const cameraBox = document.getElementById("cameraBox");
+      const videoElement = document.getElementById("webcamVideo");
+      const canvasElement = document.getElementById("outputCanvas");
+      const canvasCtx = canvasElement.getContext('2d');
+      const overlay = document.getElementById("signOverlay");
+
+      if (cameraBox) cameraBox.style.display = "block";
+      overlay.innerText = "جاري الاتصال بالكاميرا وتحميل الذكاء الاصطناعي...";
+
+      const hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+
+      hands.onResults((results) => {
+        canvasCtx.save();
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        canvasCtx.translate(canvasElement.width, 0);
+        canvasCtx.scale(-1, 1);
+        canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+          for (const landmarks of results.multiHandLandmarks) {
+            drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 3});
+            drawLandmarks(canvasCtx, landmarks, {color: '#FF0055', lineWidth: 1, radius: 4});
+          }
+          overlay.innerText = "✅ تم التعرف على اليد والإشارة!";
+        } else {
+          overlay.innerText = "ضع يدك بوضوح أمام الكاميرا...";
+        }
+        canvasCtx.restore();
+      });
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => { await hands.send({ image: videoElement }); },
+        width: 640,
+        height: 480
+      });
+
+      try { await camera.start(); } catch (err) { overlay.innerText = "❌ تعذر الوصول للكاميرا"; }
+    }
+
+    // الشات بوت الجانبي
+    function toggleChatbot() {
+      const card = document.getElementById('chatbotCard');
+      if (card) card.classList.toggle('active');
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chatInput');
+      const body = document.getElementById('chatBody');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userMsg = document.createElement('div');
+      userMsg.className = 'chat-msg user';
+      userMsg.innerText = text;
+      body.appendChild(userMsg);
+
+      input.value = '';
+      body.scrollTop = body.scrollHeight;
+
+      setTimeout(() => {
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-msg bot';
+        botMsg.innerText = "يمكنك الانتقال لقسم (رسائلي) أعلى الصفحة للتواصل المباشر مع المعلمين عبر شات الواتساب!";
+        body.appendChild(botMsg);
+        body.scrollTop = body.scrollHeight;
+      }, 700);
+    }
+
+    function handleChatKeyPress(e) {
+      if (e.key === 'Enter') sendChatMessage();
+    }
+  </script>
+</body>
+</html>
